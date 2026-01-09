@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Asteroids - Easter Egg Game</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: #fff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        min-height: 100vh;
+        font-family: "Courier New", monospace;
+        overflow: hidden;
+      }
+      .game-header {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 2rem;
+        background: #fff;
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 50;
+      }
+      .score {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #000;
+      }
+      .instructions {
+        font-size: 0.95rem;
+        color: #222;
+        text-align: center;
+      }
+      .high-score {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #000;
+      }
+      canvas {
+        display: block;
+        background: #fff;
+        border: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: 1;
+      }
+      .game-over-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.85);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+        color: #fff;
+      }
+      .game-over-overlay h1 {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+      }
+      .game-over-overlay p {
+        font-size: 1.3rem;
+        margin-bottom: 2rem;
+      }
+      .game-over-overlay button {
+        font-size: 1.2rem;
+        padding: 0.7rem 2rem;
+        cursor: pointer;
+        background: #ffcd42;
+        border: none;
+        border-radius: 6px;
+        font-weight: bold;
+        color: #222;
+        margin-bottom: 1rem;
+      }
+      .game-over-overlay button:hover {
+        background: #ffd35c;
+      }
+      .home-btn {
+        position: fixed;
+        bottom: 2rem;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 1rem;
+        padding: 0.6rem 1.5rem;
+        cursor: pointer;
+        background: #fff;
+        border: 2px solid #000;
+        font-weight: bold;
+        color: #000;
+        z-index: 10;
+      }
+      .home-btn:hover {
+        background: #000;
+        color: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="game-header">
+      <div class="score">Score: <span id="score">0</span></div>
+      <div class="instructions">
+        Use [A][S][W][D] or [←][↑][↓][→] to MOVE<br />
+        Use [SPACE] to SHOOT
+      </div>
+      <div class="high-score">High Score: <span id="highScore">0</span></div>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+    <button class="home-btn" onclick="window.location.href='index.html'">
+      GO TO HOMEPAGE
+    </button>
+    <div class="game-over-overlay" id="gameOverOverlay" style="display: none">
+      <h1>GAME OVER</h1>
+      <p>Your Score: <span id="finalScore">0</span></p>
+      <button onclick="restartGame()">PLAY AGAIN</button>
+      <button onclick="window.location.href='index.html'">
+        GO TO HOMEPAGE
+      </button>
+    </div>
+    <script>
+      // === GAME SETUP ===
+      const canvas = document.getElementById("gameCanvas");
+      const ctx = canvas.getContext("2d");
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      let score = 0;
+      let highScore = parseInt(localStorage.getItem("asteroidsHighScore")) || 0;
+      document.getElementById("highScore").textContent = highScore;
+
+      // === INPUT HANDLING ===
+      const keys = {};
+      window.addEventListener("keydown", (e) => {
+        keys[e.code] = true;
+        if (e.code === "Space") e.preventDefault();
+      });
+      window.addEventListener("keyup", (e) => {
+        keys[e.code] = false;
+      });
+
+      // === UTILITY FUNCTIONS ===
+      function wrap(pos, max) {
+        if (pos < 0) return max;
+        if (pos > max) return 0;
+        return pos;
+      }
+      function randomBetween(a, b) {
+        return Math.random() * (b - a) + a;
+      }
+
+      // === PARTICLE CLASS ===
+      class Particle {
+        constructor(x, y, angle) {
+          const speed = 1 + Math.random() * 1.5;
+          const spread = (Math.random() - 0.5) * 0.7;
+          this.x = x;
+          this.y = y;
+          this.vx = Math.cos(angle + Math.PI + spread) * speed;
+          this.vy = Math.sin(angle + Math.PI + spread) * speed;
+          this.radius = 3 + Math.random() * 2;
+          this.life = 28 + Math.random() * 10;
+          this.maxLife = this.life;
+        }
+        update() {
+          this.x += this.vx;
+          this.y += this.vy;
+          this.radius += 0.08;
+          this.life--;
+        }
+        draw(ctx) {
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, this.life / this.maxLife * 0.7);
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+          ctx.fillStyle = "#000";
+          ctx.fill();
+          ctx.globalAlpha = 1.0;
+          ctx.restore();
+        }
+      }
+
+      // === SHIP CLASS ===
+      class Ship {
+        constructor() {
+          this.x = canvas.width / 2;
+          this.y = canvas.height / 2;
+          this.radius = 15;
+          this.angle = -Math.PI / 2;
+          this.vx = 0;
+          this.vy = 0;
+          this.thrust = 0.12;
+          this.friction = 0.99;
+          this.rotSpeed = 0.07;
+          this.alive = true;
+        }
+        update() {
+          // Rotation
+          if (keys["ArrowLeft"] || keys["KeyA"]) this.angle -= this.rotSpeed;
+          if (keys["ArrowRight"] || keys["KeyD"]) this.angle += this.rotSpeed;
+          // Thrust
+          if (keys["ArrowUp"] || keys["KeyW"]) {
+            this.vx += Math.cos(this.angle) * this.thrust;
+            this.vy += Math.sin(this.angle) * this.thrust;
+          }
+          if (keys["ArrowDown"] || keys["KeyS"]) {
+            this.vx -= Math.cos(this.angle) * this.thrust * 0.5;
+            this.vy -= Math.sin(this.angle) * this.thrust * 0.5;
+          }
+          this.vx *= this.friction;
+          this.vy *= this.friction;
+          this.x += this.vx;
+          this.y += this.vy;
+          this.x = wrap(this.x, canvas.width);
+          this.y = wrap(this.y, canvas.height);
+        }
+        draw() {
+          ctx.save();
+          ctx.translate(this.x, this.y);
+          ctx.rotate(this.angle);
+          ctx.beginPath();
+          ctx.moveTo(20, 0);
+          ctx.lineTo(-14, 12);
+          ctx.lineTo(-8, 0);
+          ctx.lineTo(-14, -12);
+          ctx.closePath();
+          ctx.strokeStyle = "#000";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+
+      // === BULLET CLASS ===
+      class Bullet {
+        constructor(x, y, angle) {
+          this.x = x;
+          this.y = y;
+          this.vx = Math.cos(angle) * 9; // Moderate speed
+          this.vy = Math.sin(angle) * 9;
+          this.radius = 3;
+          this.life = 120;
+        }
+        update() {
+          this.x += this.vx;
+          this.y += this.vy;
+          // Bullets disappear at screen borders (no wrapping)
+          if (
+            this.x < 0 ||
+            this.x > canvas.width ||
+            this.y < 0 ||
+            this.y > canvas.height
+          ) {
+            this.life = 0;
+          }
+          this.life--;
+        }
+        draw() {
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+          ctx.fillStyle = "#000";
+          ctx.fill();
+        }
+      }
+
+      // === COMET CLASS ===
+      let currentSpeed = 1.5; // Speed increases with each wave
+
+      class Comet {
+        constructor(x, y, size, speed) {
+          this.x = x !== undefined ? x : randomBetween(0, canvas.width);
+          this.y = y !== undefined ? y : randomBetween(0, canvas.height);
+          this.size = size || 3; // 3=large, 2=medium, 1=small
+          this.radius = this.size * 22;
+          this.angle = randomBetween(0, Math.PI * 2);
+          const s = speed || currentSpeed;
+          this.vx = Math.cos(this.angle) * s;
+          this.vy = Math.sin(this.angle) * s;
+          // Generate random polygon
+          this.points = [];
+          let numPoints = Math.floor(randomBetween(7, 12));
+          for (let i = 0; i < numPoints; i++) {
+            let a = (i / numPoints) * Math.PI * 2;
+            let r = this.radius * randomBetween(0.7, 1.1);
+            this.points.push({ x: Math.cos(a) * r, y: Math.sin(a) * r });
+          }
+        }
+        update() {
+          this.x += this.vx;
+          this.y += this.vy;
+          this.x = wrap(this.x, canvas.width);
+          this.y = wrap(this.y, canvas.height);
+        }
+        draw() {
+          ctx.save();
+          ctx.translate(this.x, this.y);
+          ctx.beginPath();
+          ctx.moveTo(this.points[0].x, this.points[0].y);
+          for (let i = 1; i < this.points.length; i++) {
+            ctx.lineTo(this.points[i].x, this.points[i].y);
+          }
+          ctx.closePath();
+          ctx.strokeStyle = "#000";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+
+      // === GAME STATE ===
+      let ship, bullets, comets, shootCooldown, gameOver, particles;
+      let wave, waveCometsDestroyed, waveTotalComets, waveSpawned;
+
+      function spawnCometOffScreen() {
+        // Spawn comet outside the visible screen
+        let side = Math.floor(Math.random() * 4);
+        let x, y;
+        if (side === 0) {
+          x = -50;
+          y = randomBetween(0, canvas.height);
+        } // Left
+        else if (side === 1) {
+          x = canvas.width + 50;
+          y = randomBetween(0, canvas.height);
+        } // Right
+        else if (side === 2) {
+          x = randomBetween(0, canvas.width);
+          y = -50;
+        } // Top
+        else {
+          x = randomBetween(0, canvas.width);
+          y = canvas.height + 50;
+        } // Bottom
+        return new Comet(x, y, 3);
+      }
+
+      function startWave(waveNum) {
+        wave = waveNum;
+        currentSpeed = 1.5 + (wave - 1) * 0.3; // Speed increases each wave
+        waveCometsDestroyed = 0;
+        waveTotalComets = 4 + wave * 2; // Wave 1: 6, Wave 2: 8, Wave 3: 10...
+        waveSpawned = 0;
+
+        // Spawn initial 6 comets for the wave
+        let initialSpawn = Math.min(6, waveTotalComets);
+        for (let i = 0; i < initialSpawn; i++) {
+          comets.push(spawnCometOffScreen());
+          waveSpawned++;
+        }
+      }
+
+      function initGame() {
+        ship = new Ship();
+        bullets = [];
+        comets = [];
+        particles = [];
+        shootCooldown = 0;
+        gameOver = false;
+        score = 0;
+        currentSpeed = 1.5;
+        document.getElementById("score").textContent = score;
+        document.getElementById("gameOverOverlay").style.display = "none";
+        startWave(1);
+      }
+
+      // === COLLISION DETECTION ===
+      function circleCollision(a, b) {
+        return Math.hypot(a.x - b.x, a.y - b.y) < a.radius + b.radius;
+      }
+
+      // === GAME LOOP ===
+      function gameLoop() {
+        if (gameOver) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Update ship
+        ship.update();
+        ship.draw();
+
+        // Shooting
+        if (keys["Space"] && shootCooldown <= 0) {
+          bullets.push(
+            new Bullet(
+              ship.x + Math.cos(ship.angle) * 20,
+              ship.y + Math.sin(ship.angle) * 20,
+              ship.angle
+            )
+          );
+          shootCooldown = 20; // Fewer bullets
+        }
+        shootCooldown--;
+
+        // Emit particles if thrusting or recently thrusting
+        if (!particles.lastThrust) particles.lastThrust = 0;
+        if (keys["ArrowUp"] || keys["KeyW"]) {
+          for (let i = 0; i < 2; i++) {
+            particles.push(new Particle(
+              ship.x - Math.cos(ship.angle) * 18 + (Math.random() - 0.5) * 2,
+              ship.y - Math.sin(ship.angle) * 18 + (Math.random() - 0.5) * 2,
+              ship.angle
+            ));
+          }
+          particles.lastThrust = 8;
+        } else if (particles.lastThrust > 0) {
+          // Emit a few trailing particles after thrust stops
+          for (let i = 0; i < 1; i++) {
+            particles.push(new Particle(
+              ship.x - Math.cos(ship.angle) * 18 + (Math.random() - 0.5) * 2,
+              ship.y - Math.sin(ship.angle) * 18 + (Math.random() - 0.5) * 2,
+              ship.angle
+            ));
+          }
+          particles.lastThrust--;
+        }
+
+        // Update and draw particles
+        particles = particles.filter(p => p.life > 0);
+        for (let p of particles) {
+          p.update();
+          p.draw(ctx);
+        }
+
+        // Update bullets
+        bullets = bullets.filter((b) => b.life > 0);
+        bullets.forEach((b) => {
+          b.update();
+          b.draw();
+        });
+
+        // Update comets
+        comets.forEach((c) => {
+          c.update();
+          c.draw();
+        });
+
+        // Bullet-comet collision
+        let bulletsToRemove = [];
+        let cometsToRemove = [];
+        let newComets = [];
+
+        bullets.forEach((b, bi) => {
+          comets.forEach((c, ci) => {
+            if (
+              circleCollision(b, c) &&
+              !bulletsToRemove.includes(bi) &&
+              !cometsToRemove.includes(ci)
+            ) {
+              bulletsToRemove.push(bi);
+              cometsToRemove.push(ci);
+              score += (4 - c.size) * 20;
+              document.getElementById("score").textContent = score;
+              // Split comet into 2 smaller ones
+              if (c.size > 1) {
+                for (let i = 0; i < 2; i++) {
+                  newComets.push(new Comet(c.x, c.y, c.size - 1, currentSpeed));
+                }
+              } else {
+                // Smallest comet destroyed - count towards wave progress
+                waveCometsDestroyed++;
+              }
+            }
+          });
+        });
+
+        // Remove destroyed bullets and comets
+        bullets = bullets.filter((_, i) => !bulletsToRemove.includes(i));
+        comets = comets.filter((_, i) => !cometsToRemove.includes(i));
+        comets.push(...newComets);
+
+        // Wave spawning logic: spawn more comets after destroying some
+        if (
+          waveSpawned < waveTotalComets &&
+          waveCometsDestroyed >= 5 &&
+          comets.length < 8
+        ) {
+          let toSpawn = Math.min(4, waveTotalComets - waveSpawned);
+          for (let i = 0; i < toSpawn; i++) {
+            comets.push(spawnCometOffScreen());
+            waveSpawned++;
+          }
+          waveCometsDestroyed = 0;
+        }
+
+        // Check if wave is complete (all comets destroyed)
+        if (comets.length === 0 && waveSpawned >= waveTotalComets) {
+          startWave(wave + 1);
+        }
+
+        // Ship-comet collision
+        comets.forEach((c) => {
+          if (circleCollision(ship, c)) {
+            ship.alive = false;
+            endGame();
+          }
+        });
+
+        requestAnimationFrame(gameLoop);
+      }
+
+      function endGame() {
+        gameOver = true;
+        if (score > highScore) {
+          highScore = score;
+          localStorage.setItem("asteroidsHighScore", highScore);
+          document.getElementById("highScore").textContent = highScore;
+        }
+        document.getElementById("finalScore").textContent = score;
+        document.getElementById("gameOverOverlay").style.display = "flex";
+      }
+
+      function restartGame() {
+        initGame();
+        gameLoop();
+      }
+
+      // === START ===
+      initGame();
+      gameLoop();
+
+      // Responsive canvas
+      window.addEventListener("resize", () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      });
+    </script>
+  </body>
+</html>

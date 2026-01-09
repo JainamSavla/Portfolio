@@ -94,21 +94,44 @@
       <nav class="navbar">
         <div class="container">
           <!-- Logo -->
-          <h1
-            id="logo"
-            style="
-              font-family: 'Fira Mono', monospace;
-              font-size: 1.1rem;
-              font-weight: 600;
-              letter-spacing: 1px;
-              color: var(--text-color);
-            "
-          >
-            [jainam@webdev] ~ $cd /home
-          </h1>
+          <div style="display: flex; align-items: center; gap: 0.7rem">
+            <a
+              href="game.html"
+              title="Play Asteroids Easter Egg!"
+              style="display: flex; align-items: center"
+            >
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 40 40"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <polygon
+                  points="38,20 8,36 14,20 8,4"
+                  stroke="var(--text-color)"
+                  stroke-width="2.5"
+                  fill="none"
+                />
+              </svg>
+            </a>
+            <h1
+              id="logo"
+              style="
+                font-family: 'Fira Mono', monospace;
+                font-size: 1.1rem;
+                font-weight: 600;
+                letter-spacing: 1px;
+                color: var(--text-color);
+              "
+            >
+              [jainam@webdev] ~ $cd
+            </h1>
+          </div>
           <!-- Navbar links -->
           <ul class="nav-menu">
             <li><a class="nav-link" href="#projects">PROJECTS</a></li>
+            <li><a class="nav-link" href="#readme">ABOUT</a></li>
             <li><a class="nav-link" href="#experience">EXPERIENCE</a></li>
             <li><a class="nav-link" href="#education">EDUCATION</a></li>
             <li><a class="nav-link" href="#contact">CONTACT</a></li>
@@ -117,7 +140,7 @@
                 class="nav-link btn btn-primary"
                 href="assets/JainamSavlaResume.pdf"
                 download
-                >RESUME <i class="fas fa-arrow-right"></i
+                >RESUME <i class="fa fa-download"></i
               ></a>
             </li>
 
@@ -166,34 +189,74 @@
           />
         </div>
       </section>
-        </header>
-
-        <!-- About Me Section -->
-        <section id="about" class="about-section container">
-          <h2>About Me</h2>
-          <p class="about-lead">Here's a quick overview of my core skills and technologies:</p>
-          <div class="about-table-wrapper">
-            <table class="about-table">
-              <thead>
-                <tr>
-                  <th>Category</th>
-                  <th>Technologies</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr><td>💻 Languages</td><td>Python, C, Java, JavaScript</td></tr>
-                <tr><td>🤖 AI / Machine Learning</td><td>TensorFlow, Scikit-Learn, Qiskit</td></tr>
-                <tr><td>📊 Data Science</td><td>Pandas, NumPy, Seaborn</td></tr>
-                <tr><td>🌐 Web Development</td><td>React, Svelte, Node.js, Next.js, Tailwind CSS</td></tr>
-                <tr><td>🗄️ Databases</td><td>MongoDB, SQL, PostgreSQL</td></tr>
-                <tr><td>📈 Analytics & BI</td><td>Tableau, Power BI, Excel</td></tr>
-                <tr><td>🛠️ Tools & Platforms</td><td>Git, GitHub, VS Code, Docker</td></tr>
-                <tr><td>💿 Operating Systems</td><td>Linux, Arch Linux, Windows</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
     </header>
+
+    <!-- README / About Section -->
+    <section id="readme" class="readme-section container">
+      <div class="division"></div>
+      <div class="content-text">
+        <h2>About me</h2>
+      </div>
+      <div class="readme-window">
+        <div class="readme-body">
+          <h2>What I Do</h2>
+          <p>
+            I build scalable, secure solutions at the intersection of
+            decentralized systems and machine intelligence—from optimizing smart
+            contracts on Ethereum to deploying high-performance MERN
+            applications.
+          </p>
+
+          <h2>Tech Stack</h2>
+          <table class="readme-table">
+            <tr>
+              <td>Languages</td>
+              <td>Python, C, Java, JavaScript</td>
+            </tr>
+            <tr>
+              <td>AI / ML</td>
+              <td>TensorFlow, Scikit-Learn, Qiskit</td>
+            </tr>
+            <tr>
+              <td>Data Science</td>
+              <td>Pandas, NumPy, Seaborn</td>
+            </tr>
+            <tr>
+              <td>Web Dev</td>
+              <td>React, Svelte, Node.js, Next.js, Tailwind CSS</td>
+            </tr>
+            <tr>
+              <td>Databases</td>
+              <td>MongoDB, SQL, PostgreSQL</td>
+            </tr>
+            <tr>
+              <td>Analytics</td>
+              <td>Tableau, Power BI, Excel</td>
+            </tr>
+            <tr>
+              <td>Tools</td>
+              <td>Git, GitHub, VS Code, Docker</td>
+            </tr>
+            <tr>
+              <td>OS</td>
+              <td>Linux, Arch Linux, Windows</td>
+            </tr>
+          </table>
+
+          <h2>Currently Exploring</h2>
+          <p>
+            AI-driven dApps, trustless web architectures, and the future of
+            decentralized computing.
+          </p>
+
+          <h2>Let's Connect</h2>
+          <p>
+            Feel free to reach out for collaborations, open-source
+            contributions, or just a chat about tech!
+          </p>
+        </div>
+      </div>
+    </section>
 
     <!-- Experience -->
     <section id="experience" class="experience-container container">
