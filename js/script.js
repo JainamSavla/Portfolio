@@ -65,3 +65,59 @@ let myDate = document.querySelector("#datee");
 
 const yes = new Date().getFullYear();
 myDate.innerHTML = yes;
+
+const terminalData = `[System Status: Online]
+[User: Jainam Savla]
+[Role: Web3 & AI Engineer]
+
+$ cat info.txt
+I am a builder at the intersection of decentralized systems and machine intelligence. 
+I specialize in creating secure Ethereum smart contracts and high-performance MERN 
+applications. 
+
+My goal is to bridge the gap between complex backend logic and seamless user 
+experiences to solve real-world problems.
+
+$ run tech_stack.sh
+> Languages: JavaScript, Python, Solidity, C++
+> Frameworks: React, Node.js, Next.js, Hardhat
+> AI/ML: PyTorch, OpenAI API, LangChain
+
+$ _`;
+
+const terminalBody = document.getElementById("terminal-content");
+let index = 0;
+
+function typeWriter() {
+  if (index < terminalData.length) {
+    // Add syntax highlighting for the "$" and ">" signs
+    let char = terminalData.charAt(index);
+    if (char === "$") {
+      terminalBody.innerHTML += `<span class="t-blue">${char}</span>`;
+    } else if (char === ">") {
+      terminalBody.innerHTML += `<span class="t-green">${char}</span>`;
+    } else {
+      terminalBody.innerHTML += char;
+    }
+
+    index++;
+    setTimeout(typeWriter, 15); // Adjust speed here
+  } else {
+    terminalBody.innerHTML += '<span class="cursor"></span>';
+  }
+}
+
+// Trigger animation when scrolled into view
+const observer = new IntersectionObserver(
+  (entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        typeWriter();
+        observer.unobserve(entry.target); // Run only once
+      }
+    });
+  },
+  { threshold: 0.5 }
+);
+
+observer.observe(document.querySelector(".terminal-window"));
